@@ -39,7 +39,12 @@ use std::collections::HashMap;
 
 use std::fs::File;
 
-use std::io::{Error, Read, BufReader};
+use std::io::{Read, BufReader};
+
+use std::ops::Deref;
+
+use std::time::Duration;
+use std::thread;
 
 fn main() {
     // Data types: what type of value a variable has
@@ -212,14 +217,12 @@ fn main() {
     
     match admin.hat {
         Hats::SoftHands => { println!("SoftHands!!"); },
-        Hats::HardHats => { println!("HardHats"); },
-        _ => { println!("not softhands :("); }
+        Hats::Leather => {println!("Leather"); },
     }
     
     match admin2.hat {
         Hats::SoftHands => { println!("SoftHands!!"); },
-        Hats::HardHats => { println!("HardHats"); },
-        _ => { println!("not softhands :("); }
+        Hats::Leather => {println!("Leather"); },
     }
     
     // insert() , get() , len() , remove() 
@@ -249,10 +252,69 @@ fn main() {
     let mut reader = BufReader::new(f);
     let mut contents = String::new();
     
-    reader.read_to_string(&mut contents);
+    let _ = reader.read_to_string(&mut contents);
     
     println!("{:?}",contents);
     
+    let greeting2 = "hello vibhas";     
+    let greeting3 = CustomSmartPointer::heap_allocation(greeting2);
+    
+    println!("hello vibhas is the same as the greeting2? {}",greeting2=="hello vibhas");
+    println!("hello vibhas is the same as the greeting3? {}",*greeting3=="hello vibhas");
+    
+    // thread::spawn thread::park thread::unpark
+    
+    let park_thread = thread::Builder::new().spawn(
+    || {
+        println!("Parking thread");
+        thread::park();
+        println!("Thread unparked");
+    }
+    ).unwrap(); // unwrapp means give me the result and if there is an error than panic
+    
+    thread::sleep(Duration::from_millis(100));
+    println!("Unparking the thread");
+    park_thread.thread().unpark();
+    park_thread.join().unwrap();
+    // the join handle waits for the associated thread to finish. 
+    
+    let x = thread::spawn(
+    || {
+        for ri in 1..20 { 
+            println!("spawn thread: {}",ri);        
+            thread::sleep(Duration::from_millis(1));
+        }
+    } 
+    );
+    
+    for j in 1..5 {
+        println!("main threads {}",j);
+        thread::sleep(Duration::from_millis(2));
+    }
+    
+    x.join().unwrap();
+    
+}
+
+struct CustomSmartPointer<T>(T); 
+
+impl<T> CustomSmartPointer<T> {
+    fn heap_allocation(value:T)->CustomSmartPointer<T> {
+        CustomSmartPointer(value)
+    }
+}
+
+impl<T> Deref for CustomSmartPointer<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T> Drop for CustomSmartPointer<T> {
+    fn drop(&mut self) {
+        println!("dropping memory from the mem!");
+    }
 }
 
 fn is_seven(x:i32) -> Result<bool,String> {
@@ -302,7 +364,6 @@ impl Stats for Game {
 #[derive(Debug)]
 enum Hats {
     SoftHands,
-    HardHats,
     Leather
 }
 
@@ -319,4 +380,3 @@ fn display2(s:&mut String) {
 fn lads(x:i32, y:i32) -> i32 {
     x + y + 5
 }
-
